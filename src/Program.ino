@@ -5,7 +5,7 @@
 #include <time.h>
 
 // -------- CONFIG --------
-#define CONFIG_PIN       D0  // D0
+#define CONFIG_PIN       D1  // D1 GPIO_2
 #define MOTOR_ACTIVE_PIN D8  // D8
 #define MOTOR_1_PIN      D9  // D9
 #define MOTOR_2_PIN      D10 // D10
@@ -43,52 +43,73 @@ const char PAGE[] PROGMEM = R"rawliteral(
         touch-action: none;
       }
       head {height: 0dvh; margin: 0; padding: 0;}
-      body {height: 100dvh; margin: 0; padding: 0; overflow: hidden;}
-      
-      #topSettings {height: 70dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: rgb(23, 28, 51); overflow: hidden;}
-      #dial {height: 65dvh; margin: 0; padding: 0; border-radius: 10dvh; display: flex; align-items: center; justify-content: center; background: rgb(41, 52, 102); overflow: hidden;}
+      body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+
+      #menu {width: 100vw; height: 100dvh;}
+      #down {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 2;  user-select: none; background: rgb(51, 28, 28); opacity: 0.5;}
+      #downText{padding: 3vw; font-size: 10vw; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0; display: none;  position: absolute; z-index: 2; background: rgb(102, 52, 41);border-radius: 5dvh; user-select: none;}
+
+      .backgroundElement {background: rgb(23, 28, 51);}
+      .foregroundElement {background: rgb(41, 52, 102);}
+
+      .downBackgroundElement {background: rgb(23, 28, 51);}
+      .downForegroundElement {background: rgb(41, 52, 102);}
+
+      #topSettings {height: 70dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+      #dial {height: 65dvh; margin: 0; padding: 0; border-radius: 10dvh; display: flex; align-items: center; justify-content: center; overflow: hidden;}
       #selector {width: 100vw; height: 70dvh; margin: 0; padding: 0; display: flex;  position: absolute; z-index: 2; align-items: center; justify-content: center; pointer-events: none;}
       #separator {height: 65dvh; width: 5vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; user-select: none;}
       #hours {height: 60dvh; width: 30vw; margin: 0; padding: 0; text-align: center; overflow: hidden;}
       #minutes {height: 60dvh; width: 30vw; margin: 0; padding: 0; text-align: center; overflow: hidden;}
             
-      #bottomSettings {height: 30dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: rgb(23, 28, 51); overflow: hidden;}
-      #duration {height: 30dvh; width: 30vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: rgb(23, 28, 51);}
-      #seconds {height: 25dvh; width: 30vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; background: rgb(41, 52, 102);overflow: hidden; }
-      #space {height: 30dvh; width: 10vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: rgb(23, 28, 51);}
-      #shutdown {height: 25dvh; width: 30vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgb(41, 52, 102);overflow: hidden; user-select: none;}
+      #bottomSettings {height: 30dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+      #duration {height: 30dvh; width: 20vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;}
+      #seconds {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; overflow: hidden; }
+      #space {height: 30dvh; width: 5vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; }
+      #shutdown {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+      #water {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
 
-      .activeText{font-size: 15vw; color: white; opacity: 1.0;}
-      .otherText{font-size: 4vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0;}
+      .separatorText{font-size: 4vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0;}
+      .upperText{font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
       .lowerText{font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
       #topBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-bottom: 35dvh; background: white;}
       #bottomBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-top: 35dvh; background: white;}
     </style>
   </head>
-  <body>
-    <div id="topSettings">
-      <div id="selector">
-        <div id="topBar"></div>
-        <div id="bottomBar"></div>
-      </div>
-      <div id="dial">
-        <div id="hours"></div>
-        <div id="separator" class="clockText" id="separator">
-          <t class="activeText">:</t>
+  <div id="menu">
+    <body class="backgroundElement">
+      <div id="topSettings">
+        <div id="selector">
+          <div id="topBar"></div>
+          <div id="bottomBar"></div>
         </div>
-        <div id="minutes"></div>
+        <div id="dial" class="foregroundElement">
+          <div id="hours"></div>
+          <div id="separator" class="clockText" id="separator">
+            <t class="separatorText">:</t>
+          </div>
+          <div id="minutes"></div>
+        </div>
+      </div>
+      <div id="bottomSettings">
+        <div id="duration">
+          <div id="seconds" class="foregroundElement"></div>
+        </div>
+        <div id="space"></div>
+        <div id="shutdown" class="foregroundElement">
+          <div class="upperText">Speichern</div>
+          <div class="lowerText">(Herunterfahren)</div>
+        </div>
+        <div id="space"></div>
+        <div id="water" class="foregroundElement">
+          <div class="upperText">Bew&auml;ssern</div>
+          <div class="lowerText">(Sofort)</div>
+        </div>
       </div>
     </div>
-    <div id="bottomSettings">
-      <div id="duration">
-        <div id="seconds"></div>
-      </div>
-      <div id="space"></div>
-      <div id="shutdown">
-        <div class="otherText">Speichern</div>
-        <div class="lowerText">(Herunterfahren)</div>
-      </div>
+    <div id="down">
     </div>
+    <div id="downText">Server schl&auml;ft</div>
 
     <script>
       function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
@@ -126,6 +147,13 @@ const char PAGE[] PROGMEM = R"rawliteral(
 
         const activeDiv = parentDiv.querySelector("#number" + index);
         animateNumber(activeDiv, bigFont, bigFont, "1.0", "1.0", 0);
+      }
+
+      function scaleText(id, fontSize, opacity) {
+        const textDivs = document.getElementsByClassName(id);
+        for (let textDiv of textDivs) {
+          animateNumber(textDiv, fontSize, fontSize, opacity, opacity, 0);
+        }
       }
 
       function animateNumber(animatedDiv, fonstStart, fontEnd, opacityStart, opacityEnd, time) {
@@ -181,7 +209,6 @@ const char PAGE[] PROGMEM = R"rawliteral(
       async function setActive(parentDiv, count, activeIndex, index, smallFont, bigFont, time) {
         const oldIndex = activeIndex;
 
-        // When index wraps around quick set active number
         if(index - activeIndex >= 0.5 * count) {
           activeIndex += count;
         }
@@ -224,12 +251,30 @@ const char PAGE[] PROGMEM = R"rawliteral(
       output.text = numberDiv.textContent;
     }
 
-    async function getInput(id) {
-      const res = await fetch(id);
-      const value = await res.text();
-      console.log("Got input:", value);
+    async function getInput(id, defaultValue) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
 
-      return parseInt(value.trim());
+      try {
+        const res = await fetch(id, { signal: controller.signal });
+
+        if (!res.ok) {
+          throw new Error(`Server error: ${res.status}`);
+        }
+
+        const value = await res.text();
+        return parseInt(value.trim());
+      } catch (err) {
+        if (err.name === "AbortError") {
+          console.error("Request timed out (server may be down)");
+        } else {
+          console.error("Network/server error:", err.message);
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      return defaultValue;
     }
 
     async function addScrollNumbers(output, id, count, increment=1, defaultValue=0, smallFontH=6, bigFontH=16, smallFontW=6, bigFontW=16) {
@@ -306,34 +351,100 @@ const char PAGE[] PROGMEM = R"rawliteral(
     }
 
     async function main() {
+      let serverUp = true;
+
       let hour = {};
       let minute = {};
       let duration = {};
 
-      let hourDefault = await getInput("/getHour");
-      let minuteDefault = await getInput("/getMinute");
-      let durationDefault = await getInput("/getDuration");
+      let hourDefault = await getInput("/getHour", 12);
+      let minuteDefault = await getInput("/getMinute", 0);
+      let durationDefault = await getInput("/getDuration", 20);
 
-      addScrollNumbers(hour, "hours" , 24, 1, hourDefault, 12, 30, 6, 15);
-      addScrollNumbers(minute, "minutes", 12, 5, minuteDefault, 12, 30, 6, 15);
-      addScrollNumbers(duration, "seconds", 50, 5, durationDefault, 6, 12, 3, 6);
+      await addScrollNumbers(hour, "hours" , 24, 1, hourDefault, 12, 30, 6, 15);
+      await addScrollNumbers(minute, "minutes", 12, 5, minuteDefault, 12, 30, 6, 15);
+      await addScrollNumbers(duration, "seconds", 50, 5, durationDefault, 6, 12, 3, 6);
+
+      window.addEventListener("resize", async () => {
+        const separatorDiv = document.getElementById("separator");
+        const bigDiv = document.getElementById("shutdown");
+
+        bigFont = separatorDiv.clientHeight < separatorDiv.clientWidth ? (30 + 'vh') : (15 + 'vw');
+        upperFont = 1.5 * bigDiv.clientHeight < bigDiv.clientWidth ? (6 + 'vh') : (3 + 'vw');
+        lowerFont = 1.5 * bigDiv.clientHeight < bigDiv.clientWidth ? (4 + 'vh') : (2 + 'vw');
+
+        scaleText("separatorText", bigFont, "1.0");
+        scaleText("upperText", upperFont, "1.0");
+        scaleText("lowerText", lowerFont, "0.5");
+      });
+
+      window.dispatchEvent(new Event("resize"));
 
       const shutdownDiv = document.getElementById("shutdown");
 
       shutdownDiv.addEventListener("click", async () => {
-      try {
-        const response = await fetch("/set?hour=" + hour.text + "&minute=" + minute.text + "&duration=" + duration.text);
+        try {
+          const response = await fetch("/set?hour=" + hour.text + "&minute=" + minute.text + "&duration=" + duration.text);
 
-        if (!response.ok) {
-          throw new Error("HTTP error " + response.status);
+          if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+          }
+
+          const data = await response.json();
+          console.log(data);
+        } catch (err) {
+          console.error("Fetch failed:", err);
         }
+      });
 
-        const data = await response.json();
-        console.log(data);
-      } catch (err) {
-        console.error("Fetch failed:", err);
-      }
-    });
+      const waterDiv = document.getElementById("water");
+
+      waterDiv.addEventListener("click", async () => {
+        try {
+          const response = await fetch("/water?duration=" + duration.text);
+
+          if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+          }
+
+          const data = await response.json();
+          console.log(data);
+        } catch (err) {
+          console.error("Fetch failed:", err);
+        }
+      });
+
+      const serverUpLoop = setInterval(async () => {
+        try {
+          const response = await fetch("/health");
+
+          if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+          }
+
+          if(serverUp) return;
+
+          serverUp = true;
+
+          const down = document.getElementById("down");
+          down.style.display = "none";
+
+          const downText = document.getElementById("downText");
+          downText.style.display = "none";
+        } catch (err) {
+          console.error("Fetch failed:", err);
+
+          if(!serverUp) return;
+
+          serverUp = false;
+
+          const down = document.getElementById("down");
+          down.style.display = "flex";
+
+          const downText = document.getElementById("downText");
+          downText.style.display = "block";
+        }
+      }, 10000);
     }
 
     main();
@@ -383,7 +494,7 @@ void goToSleep() {
   Serial.print("Sleeping for (seconds): ");
   Serial.println(sleepTime / 1000000ULL);
 
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0); // button
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_2, 0); // button
   esp_sleep_enable_timer_wakeup(sleepTime);    // timer
 
   WiFi.softAPdisconnect(true);
@@ -413,10 +524,16 @@ void handleSet() {
 
   Serial.printf("Saved time: %02d:%02d for %02d s\n", wakeHour, wakeMinute, wakeDuration);
 
-  server.send(200, "text/plain", "Saved");
+  server.send(200, "application/json", "{\"success\":true}");
 
   delay(1000);
   goToSleep();
+}
+
+void handleWater() {
+  server.send(200, "application/json", "{\"success\":true}");
+
+  water(server.arg("duration").toInt());
 }
 
 void handleGetHour() {
@@ -429,6 +546,28 @@ void handleGetMinute() {
 
 void handleGetDuration() {
   server.send(200, "text/plain", String(wakeDuration));
+}
+
+void handleHealth() {
+  server.send(200, "application/json", "{\"success\":true}");
+}
+
+void water(int duration) {
+    // Enable Motor Driver
+    digitalWrite(MOTOR_ACTIVE_PIN, HIGH);
+
+    // Drive Motor
+    digitalWrite(MOTOR_1_PIN, HIGH);
+    digitalWrite(MOTOR_2_PIN, LOW);
+
+    delay(duration * 1000);
+
+    // Stop Motor
+    digitalWrite(MOTOR_1_PIN, LOW);
+    digitalWrite(MOTOR_2_PIN, LOW);
+
+    // Disable Motor Driver
+    digitalWrite(MOTOR_ACTIVE_PIN, LOW);
 }
 
 // -------- SETUP --------
@@ -487,6 +626,8 @@ void setup() {
     server.on("/getHour", handleGetHour);
     server.on("/getMinute", handleGetMinute);
     server.on("/getDuration", handleGetDuration);
+    server.on("/water", handleWater);
+    server.on("/health", handleHealth);
 
     server.begin();
 
@@ -494,21 +635,7 @@ void setup() {
   } else {
     Serial.println("Timer wake task running...");
 
-    // Enable Motor Driver
-    digitalWrite(MOTOR_ACTIVE_PIN, HIGH);
-
-    // Drive Motor
-    digitalWrite(MOTOR_1_PIN, HIGH);
-    digitalWrite(MOTOR_2_PIN, LOW);
-
-    delay(wakeDuration * 1000);
-
-    // Stop Motor
-    digitalWrite(MOTOR_1_PIN, LOW);
-    digitalWrite(MOTOR_2_PIN, LOW);
-
-    // Disable Motor Driver
-    digitalWrite(MOTOR_ACTIVE_PIN, LOW);
+    water(wakeDuration);
 
     delay(1000);
     goToSleep();
