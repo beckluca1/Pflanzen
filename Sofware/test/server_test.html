@@ -1,4 +1,87 @@
-function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        * {touch-action: none;}
+head {height: 0dvh; margin: 0; padding: 0;}
+body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+
+#menu {width: 100vw; height: 100dvh;}
+#down {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 3;  user-select: none; background: rgba(51, 28, 28, 0.5); backdrop-filter: blur(8px);}
+#downText{padding: 3vw; font-size: 10vw; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0; display: none;  position: absolute; z-index: 3; background: rgb(102, 52, 41);border-radius: 5dvh; user-select: none;}
+#settings {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 2; user-select: none; align-items: center; justify-content: center; background: rgba(21, 32, 62, 0.7); backdrop-filter: blur(12px);}
+#settingsText{padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; top: 1vh; right: 1vw;border-radius: 4dvh; user-select: none;}
+
+.backgroundElement {background: rgb(23, 28, 51);}
+.foregroundElement {background: rgb(41, 52, 102);}
+
+.downBackgroundElement {background: rgb(23, 28, 51);}
+.downForegroundElement {background: rgb(41, 52, 102);}
+
+#topSettings {height: 70dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+#dial {height: 65dvh; margin: 0; padding: 0; border-radius: 10dvh; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+#selector {width: 100vw; height: 70dvh; margin: 0; padding: 0; display: flex;  position: absolute; z-index: 2; align-items: center; justify-content: center; pointer-events: none;}
+#separator {height: 65dvh; width: 5vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; user-select: none;}
+#hours {height: 60dvh; width: 30vw; margin: 0; padding: 0; text-align: center; overflow: hidden;}
+#minutes {height: 60dvh; width: 30vw; margin: 0; padding: 0; text-align: center; overflow: hidden;}
+            
+#bottomSettings {height: 30dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+#duration {height: 30dvh; width: 20vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;}
+#seconds {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; overflow: hidden; }
+#space {height: 30dvh; width: 5vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; }
+#shutdown {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+#water {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+
+.separatorText{font-size: 4vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0;}
+.upperText{font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
+.lowerText{font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
+#topBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-bottom: 35dvh; background: white;}
+#bottomBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-top: 35dvh; background: white;}
+
+#update {padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; border-radius: 4dvh; user-select: none;}
+</style>
+  </head>
+  <div id="menu">
+    <body class="backgroundElement">
+      <div id="topSettings">
+        <div id="selector">
+          <div id="topBar"></div>
+          <div id="bottomBar"></div>
+        </div>
+        <div id="dial" class="foregroundElement">
+          <div id="hours"></div>
+          <div id="separator" class="clockText" id="separator">
+            <t class="separatorText">:</t>
+          </div>
+          <div id="minutes"></div>
+        </div>
+      </div>
+      <div id="bottomSettings">
+        <div id="duration">
+          <div id="seconds" class="foregroundElement"></div>
+        </div>
+        <div id="space"></div>
+        <div id="shutdown" class="foregroundElement">
+          <div class="upperText">Speichern</div>
+          <div class="lowerText">(Herunterfahren)</div>
+        </div>
+        <div id="space"></div>
+        <div id="water" class="foregroundElement">
+          <div class="upperText">Bew&auml;ssern</div>
+          <div class="lowerText">(Sofort)</div>
+        </div>
+      </div>
+    </div>
+    <div id="down">
+    </div>
+    <div id="downText">Server schl&auml;ft</div>
+    <div id="settings">
+        <div id="update" class="foregroundElement">Update</div>
+    </div>
+    <div id="settingsText" class="foregroundElement">&#x26ED;</div>
+    <script>
+              function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
         const firstDiv = parentDiv.querySelector("#number0");
         const lastDiv = parentDiv.querySelector("#number" + (count * 3 + 1));
 
@@ -370,3 +453,6 @@ function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
     }
 
     main();
+    </script>
+  </body>
+</html>

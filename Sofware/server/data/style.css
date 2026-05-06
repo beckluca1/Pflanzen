@@ -3,8 +3,10 @@ head {height: 0dvh; margin: 0; padding: 0;}
 body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
 
 #menu {width: 100vw; height: 100dvh;}
-#down {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 2;  user-select: none; background: rgb(51, 28, 28); opacity: 0.5;}
-#downText{padding: 3vw; font-size: 10vw; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0; display: none;  position: absolute; z-index: 2; background: rgb(102, 52, 41);border-radius: 5dvh; user-select: none;}
+#down {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 3;  user-select: none; background: rgba(51, 28, 28, 0.5); backdrop-filter: blur(8px);}
+#downText{padding: 3vw; font-size: 10vw; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0; display: none;  position: absolute; z-index: 3; background: rgb(102, 52, 41);border-radius: 5dvh; user-select: none;}
+#settings {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 2; user-select: none; align-items: center; justify-content: center; background: rgba(21, 32, 62, 0.7); backdrop-filter: blur(12px);}
+#settingsText{padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; top: 1vh; right: 1vw;border-radius: 4dvh; user-select: none;}
 
 .backgroundElement {background: rgb(23, 28, 51);}
 .foregroundElement {background: rgb(41, 52, 102);}
@@ -31,3 +33,5 @@ body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center;
 .lowerText{font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
 #topBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-bottom: 35dvh; background: white;}
 #bottomBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-top: 35dvh; background: white;}
+
+#update {padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; border-radius: 4dvh; user-select: none;}

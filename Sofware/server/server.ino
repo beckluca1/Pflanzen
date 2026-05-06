@@ -18,8 +18,6 @@ const char* password = "XXX";
 
 // NTP
 const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 0;      // adjust if needed
-const int daylightOffset_sec = 0;  // adjust if needed
 
 // -----------------------
 
@@ -173,6 +171,19 @@ void handleHealth() {
   server.send(200, "application/json", "{\"success\":true}");
 }
 
+void handleUpdate() {
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS Mount Failed");
+    return false;
+  }
+
+  downloadFile(indexURL, "/index.html");
+  downloadFile(styleURL, "/style.css");
+  downloadFile(scriptURL, "/script.js");
+
+  server.send(200, "application/json", "{\"success\":true}");
+}
+
 void water(int duration) {
     // Enable Motor Driver
     digitalWrite(MOTOR_ACTIVE_PIN, HIGH);
@@ -318,6 +329,7 @@ bool startServer() {
     server.on("/getDuration", handleGetDuration);
     server.on("/water", handleWater);
     server.on("/health", handleHealth);
+    server.on("/update", handleUpdate);
 
     // Start Server
     server.begin();
