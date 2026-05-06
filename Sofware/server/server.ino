@@ -174,7 +174,10 @@ void handleHealth() {
 void handleUpdate() {
   if (!SPIFFS.begin(true)) {
     Serial.println("SPIFFS Mount Failed");
-    return false;
+
+    server.send(200, "application/json", "{\"success\":false}");
+
+    return;
   }
 
   downloadFile(indexURL, "/index.html");
@@ -308,7 +311,7 @@ void downloadFile(String fileURL, String fileName) {
   http.end();
 }
 
-bool startServer() {
+bool updateWebsite() {
     // Mount Spiffs
     if (!SPIFFS.begin(true)) {
       Serial.println("SPIFFS Mount Failed");
@@ -319,6 +322,10 @@ bool startServer() {
     downloadFile(styleURL, "/style.css");
     downloadFile(scriptURL, "/script.js");
 
+    return true;
+}
+
+bool startServer() {
     // Init web routes
     server.on("/", handleRoot);
     server.on("/style.css", handleStyle);
@@ -373,6 +380,7 @@ void setup() {
     // Sync time
     initTime();
 
+    updateWebsite();
     startServer();
 
     startTime = millis();
