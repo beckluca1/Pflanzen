@@ -15,6 +15,7 @@
 // WiFi AP (config mode)
 const char* ssid = "XXX";
 const char* password = "XXX";
+const char* url = "pflanze";
 
 // NTP
 const char* ntpServer = "pool.ntp.org";
@@ -29,13 +30,13 @@ int wakeMinute = 0;
 int wakeDuration = 30;
 
 enum ConfigMode {
-  noBoot = 0,
-  firstBoot = 1,
-  buttonBoot = 2,
-  scheduledBoot = 3,
+  noBootMode = 0,
+  firstBootMode = 1,
+  buttonBootMode = 2,
+  scheduledBootMode = 3,
 };
 
-ConfigMode configMode = noBoot;
+ConfigMode configMode = noBootMode;
 
 int startTime = 0;
 
@@ -44,19 +45,41 @@ const char* styleURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/ref
 const char* scriptURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/script.js";
 
 // -------- TIME --------
-void initTime() {
+bool initTime() {
   configTime(0, 0, ntpServer);
 
   setenv("TZ", "CET-1CEST-2,M3.5.0/2,M10.5.0/3", 1);
   tzset();
 
   struct tm timeinfo;
-  while (!getLocalTime(&timeinfo)) {
+
+  unsigned long timeoutStart = millis();
+  const unsigned long timeout = 20000;
+  Serial.print("Trying init time");
+
+  while (true) {
+    if(getLocalTime(&timeinfo)) {
+      Serial.println("");
+      break;
+    }
+
+    if(millis() - timeoutStart > timeout) {
+      Serial.println("");
+      Serial.println("Failed to init time");
+      return false;
+    }
+    
+    Serial.print(".");
     delay(500);
   }
 
   time_t now = time(nullptr);
-  Serial.println(ctime(&now));
+
+  Serial.println("---------Inited time---------");
+  Serial.print("Time: "); Serial.print(ctime(&now));
+  Serial.println("-----------------------------");
+
+  return true;
 }
 
 // Calculate microseconds until next scheduled wake
@@ -85,6 +108,8 @@ void goToSleep() {
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_2, 0); // button
   esp_sleep_enable_timer_wakeup(sleepTime);    // timer
 
+  server.stop();
+  MDNS.end();
   WiFi.softAPdisconnect(true);
   WiFi.mode(WIFI_OFF);
   btStop();
@@ -92,6 +117,21 @@ void goToSleep() {
   delay(100);
 
   esp_deep_sleep_start();
+}
+
+bool mountSpiffs() {
+    Serial.println("Trying to mount SPIFFS");
+    if (!SPIFFS.begin(true)) {
+      Serial.println("Failed to mount SPIFFS");
+      return false;
+    }
+
+    Serial.println("-------Mounted SPIFFS--------");
+    Serial.print("Total Storage: "); Serial.println(SPIFFS.totalBytes());
+    Serial.print("Used Storage: "); Serial.println(SPIFFS.usedBytes());
+    Serial.println("-----------------------------");    
+    
+    return true;
 }
 
 // -------- WEB HANDLERS --------
@@ -103,6 +143,8 @@ void sendFile(String fileName, const char * fileType) {
   }
 
   size_t fileSize = file.size();
+
+  Serial.printf("Send client file of size %u bytes\n", fileSize);
 
   server.setContentLength(fileSize);
   server.send(200, fileType);
@@ -152,7 +194,24 @@ void handleSet() {
 void handleWater() {
   server.send(200, "application/json", "{\"success\":true}");
 
+  // Turn off conncetions to draw less power
+  server.stop();
+  MDNS.end();
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_OFF);
+  btStop();
+
+  delay(100);
+
   water(server.arg("duration").toInt());
+
+  delay(100);
+
+  connectToWifiFast();
+  connectMDNS(url);
+  startServer();
+
+  startTime = millis();
 }
 
 void handleGetHour() {
@@ -172,14 +231,6 @@ void handleHealth() {
 }
 
 void handleUpdate() {
-  if (!SPIFFS.begin(true)) {
-    Serial.println("SPIFFS Mount Failed");
-
-    server.send(200, "application/json", "{\"success\":false}");
-
-    return;
-  }
-
   downloadFile(indexURL, "/index.html");
   downloadFile(styleURL, "/style.css");
   downloadFile(scriptURL, "/script.js");
@@ -205,24 +256,44 @@ void water(int duration) {
     digitalWrite(MOTOR_ACTIVE_PIN, LOW);
 }
 
+bool waitForWifi() {
+    Serial.print("Trying to connect to Wifi");
+    unsigned long timeoutStart = millis();
+    const unsigned long timeout = 20000;
+
+    while(true) {
+      if(WiFi.status() == WL_CONNECTED) {
+        Serial.println("");
+        Serial.println("------Connected to Wifi------");
+        Serial.print("SSID: "); Serial.println(WiFi.SSID());
+        Serial.print("RSSI: "); Serial.println(WiFi.RSSI());
+        Serial.print("Local IP: "); Serial.println(WiFi.localIP());
+        Serial.print("Gateway IP: "); Serial.println(WiFi.gatewayIP());
+        Serial.print("Subnet Mask: "); Serial.println(WiFi.subnetMask());
+        Serial.print("Mac Address: "); Serial.println(WiFi.macAddress());
+        Serial.print("Channel: "); Serial.println(WiFi.channel());
+        Serial.print("BSSID: "); Serial.println(WiFi.BSSIDstr());
+        Serial.println("-----------------------------");
+        break;
+      }
+
+      if(millis() - timeoutStart > timeout) {
+        Serial.println("");
+        Serial.println("Wifi Connection Failed");
+        return false;
+      }
+
+      Serial.print(".");
+      delay(500);
+    }
+
+    return true;
+}
+
 bool connectToWifiDefault() {
     WiFi.begin(ssid, password);
 
-    // Wait for wifi to be connected
-    Serial.println("Connect to Wifi");
-    unsigned long timeoutStart = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - timeoutStart < 10000) {
-      delay(100);
-      Serial.print(".");
-    }
-    Serial.println("");
-
-    if (WiFi.status() != WL_CONNECTED) {
-      Serial.println("Connection Failed");
-      return false;
-    }
-
-    Serial.println("Connected to Wifi");
+    if(!waitForWifi()) return false;
 
     // Record Wifi credentials for faster reconnect
     uint8_t channel = WiFi.channel();
@@ -252,35 +323,25 @@ bool connectToWifiFast() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password, channel, bssid, true);
 
-    // Wait for wifi to be connected
-    Serial.println("Connect to Wifi");
-    unsigned long timeoutStart = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - timeoutStart < 10000) {
-      delay(100);
-      Serial.print(".");
-    }
-    Serial.println("");
-
-    if (WiFi.status() != WL_CONNECTED) {
-      Serial.println("Fast Connection Failed");
-      return connectToWifiDefault();
-    }
-
-    Serial.println("Connected to Wifi");
+    if(!waitForWifi()) return connectToWifiDefault();
 
     return true;
 }
 
-bool connectMDNS() {
-    if (!MDNS.begin("pflanze")) {
-      Serial.println("Error setting up MDNS responder!");
+bool connectMDNS(const char* hostname) {
+    Serial.println("Trying to start MDNS");
+    if (!MDNS.begin(hostname)) {
+      Serial.println("Failed to start  MDNS");
       return false;
     }
-    Serial.println("mDNS responder started");
+    Serial.println("--------Started MDNS---------");
+    Serial.print("Hostname: "); Serial.println(hostname);
+    Serial.println("-----------------------------");    
+    
     return true;
 }
 
-void downloadFile(String fileURL, String fileName) {
+bool downloadFile(String fileURL, String fileName) {
   HTTPClient http;
   http.begin(fileURL);
 
@@ -292,35 +353,68 @@ void downloadFile(String fileURL, String fileName) {
     File file = SPIFFS.open(fileName, FILE_WRITE);
     if (!file) {
       Serial.println("Failed to open file");
-      return;
-    }
-
-    uint8_t buffer[128];
-    int bytesRead;
-
-    while (http.connected() && (bytesRead = stream->readBytes(buffer, sizeof(buffer))) > 0) {
-      file.write(buffer, bytesRead);
-    }
-
-    file.close();
-    Serial.println("File downloaded and saved!");
-  } else {
-    Serial.printf("HTTP GET failed, error: %d\n", httpCode);
-  }
-
-  http.end();
-}
-
-bool updateWebsite() {
-    // Mount Spiffs
-    if (!SPIFFS.begin(true)) {
-      Serial.println("SPIFFS Mount Failed");
       return false;
     }
 
-    downloadFile(indexURL, "/index.html");
-    downloadFile(styleURL, "/style.css");
-    downloadFile(scriptURL, "/script.js");
+    uint8_t buffer[128];
+    size_t bytesRead;
+    size_t totalBytes = 0;
+
+    unsigned long timeoutStart = millis();
+    const unsigned long timeout = 500;
+    int contentLength = http.getSize();
+
+    Serial.print("Try Downloading file");
+
+    while (true) {
+      if (stream->available()) {
+        size_t bytesRead = stream->readBytes(buffer, sizeof(buffer));
+        file.write(buffer, bytesRead);
+        totalBytes += bytesRead;
+
+        if(contentLength > 0 && totalBytes == (size_t)contentLength) {
+          Serial.println("");
+          break;
+        }
+
+        timeoutStart = millis(); // reset timeout
+      } else {
+        if (!http.connected() || millis() - timeoutStart > timeout) {
+          Serial.println("");
+          Serial.println("Failed Downloading file");
+          file.close();
+          return false;
+        }
+
+        Serial.print(".");
+        delay(10);
+      }
+    }
+    file.close();
+
+    File checkFile = SPIFFS.open(fileName, FILE_READ);
+
+    Serial.println("------Downloaded file--------");
+    Serial.print("Name: "); Serial.println(checkFile.name());
+    Serial.print("Size: "); Serial.println(checkFile.size());
+    Serial.println("-----------------------------");    
+
+    checkFile.close();
+  } else {
+    Serial.printf("HTTP GET failed, error: %d\n", httpCode);
+
+    return false;
+  }
+
+  http.end();
+
+  return true;
+}
+
+bool updateWebsite() {
+    if(!downloadFile(indexURL, "/index.html")) return false;
+    if(!downloadFile(styleURL, "/style.css")) return false;
+    if(!downloadFile(scriptURL, "/script.js")) return false;
 
     return true;
 }
@@ -344,6 +438,45 @@ bool startServer() {
     return true;
 }
 
+bool firstBoot() {
+  if(!connectToWifiDefault())     return false;
+  if(!connectMDNS(url))           return false;
+  if(!initTime())                 return false;
+  if(!mountSpiffs())              return false;
+  if(!updateWebsite())            return false;
+  startServer();
+  startTime = millis();
+  return true;
+}
+
+bool buttonBoot() {
+  if(!connectToWifiFast())  return false;
+  if(!connectMDNS(url))     return false;
+  if(!initTime())           return false;
+  if(!mountSpiffs())        return false;
+  startServer();
+  startTime = millis();
+  return true;
+}
+
+bool scheduledBoot() {
+  water(wakeDuration);
+  goToSleep();
+  return true;
+}
+
+bool bootUp(ConfigMode configMode) {
+  if (configMode == firstBootMode) {
+    return firstBoot();
+  } else if(configMode == buttonBootMode) {
+    return buttonBoot();
+  } else if(configMode == scheduledBootMode) {
+    return scheduledBoot();
+  }
+
+  return false;
+}
+
 // -------- SETUP --------
 void setup() {
   Serial.begin(115200);
@@ -364,43 +497,27 @@ void setup() {
 
   if (cause == ESP_SLEEP_WAKEUP_EXT0) {
     Serial.println("Button boot");
-    configMode = buttonBoot;
+    configMode = buttonBootMode;
   } else if (cause == ESP_SLEEP_WAKEUP_TIMER) {
     Serial.println("Scheduled boot");
-    configMode = scheduledBoot;
+    configMode = scheduledBootMode;
   } else {
     Serial.println("First boot");
-    configMode = firstBoot;
+    configMode = firstBootMode;
   }
 
-  if (configMode == firstBoot) {
-    connectToWifiDefault();
-    connectMDNS();
+    // Wait for wifi to be connected
+    Serial.println("--------------------Trying to boot-------------------------------");
 
-    // Sync time
-    initTime();
+    while(true) {
+      if(bootUp(configMode)) {
+        Serial.println("-----------------------Booted up---------------------------------");
+        break;
+      }
 
-    updateWebsite();
-    startServer();
-
-    startTime = millis();
-  } else if(configMode == buttonBoot) {
-    connectToWifiFast();
-    connectMDNS();
-
-    // Sync time
-    initTime();
-
-    startServer();
-
-    startTime = millis();
-  } else if(configMode == scheduledBoot) {
-    Serial.println("Timer wake task running...");
-
-    water(wakeDuration);
-
-    goToSleep();
-  }
+      Serial.println("------------------Error: Trying again----------------------------");
+      delay(500);
+    }
 }
 
 // -------- LOOP --------
