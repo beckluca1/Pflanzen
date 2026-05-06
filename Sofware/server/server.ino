@@ -28,7 +28,14 @@ int wakeHour = 12;
 int wakeMinute = 0;
 int wakeDuration = 30;
 
-bool configMode = false;
+enum ConfigMode {
+  noBoot = 0,
+  firstBoot = 1,
+  buttonBoot = 2,
+  scheduledBoot = 3,
+};
+
+ConfigMode configMode = noBoot;
 
 int startTime = 0;
 
@@ -392,6 +399,14 @@ const char PAGE[] PROGMEM = R"rawliteral(
 
           const data = await response.json();
           console.log(data);
+
+          serverUp = false;
+
+          const down = document.getElementById("down");
+          down.style.display = "flex";
+
+          const downText = document.getElementById("downText");
+          downText.style.display = "block";
         } catch (err) {
           console.error("Fetch failed:", err);
         }
@@ -570,12 +585,96 @@ void water(int duration) {
     digitalWrite(MOTOR_ACTIVE_PIN, LOW);
 }
 
+bool connectToWifiDefault() {
+    WiFi.begin(ssid, password);
+
+    // Wait for wifi to be connected
+    Serial.println("Connect to Wifi");
+    unsigned long timeoutStart = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - timeoutStart < 10000) {
+      delay(100);
+      Serial.print(".");
+    }
+
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("Connection Failed");
+      return false;
+    }
+
+    Serial.println("Connected to Wifi");
+
+    // Record Wifi credentials for faster reconnect
+    uint8_t channel = WiFi.channel();
+    const uint8_t* bssid = WiFi.BSSID();
+  
+    // Store Wifi credentials
+    prefs.begin("wifi", false);
+    prefs.putUChar("channel", channel);
+    prefs.putBytes("bssid", bssid, 6);
+    prefs.end();
+
+    return true;
+}
+
+bool connectToWifiFast() {
+    // Load wifi credentials
+    Preferences prefs;
+    prefs.begin("wifi", true);
+
+    uint8_t channel = prefs.getUChar("channel", 0);
+    uint8_t bssid[6];
+    prefs.getBytes("bssid", bssid, 6);
+
+    prefs.end();
+  
+    // Connect to Wifi
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password, channel, bssid, true);
+
+    // Wait for wifi to be connected
+    Serial.println("Connect to Wifi");
+    unsigned long timeoutStart = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - timeoutStart < 10000) {
+      delay(100);
+      Serial.print(".");
+    }
+
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("Fast Connection Failed");
+      return connectToWifiDefault();
+    }
+
+    Serial.println("Connected to Wifi");
+
+    return true;
+}
+
+bool connectMDNS() {
+    if (!MDNS.begin("pflanze")) {
+      Serial.println("Error setting up MDNS responder!");
+      return false;
+    }
+    Serial.println("mDNS responder started");
+    return true;
+}
+
+void startServer() {
+    // Init web routes
+    server.on("/", handleRoot);
+    server.on("/set", handleSet);
+    server.on("/getHour", handleGetHour);
+    server.on("/getMinute", handleGetMinute);
+    server.on("/getDuration", handleGetDuration);
+    server.on("/water", handleWater);
+    server.on("/health", handleHealth);
+
+    // Start Server
+    server.begin();
+}
+
 // -------- SETUP --------
 void setup() {
   Serial.begin(115200);
-  delay(1000);
-
-  pinMode(CONFIG_PIN, INPUT_PULLUP);
 
   pinMode(MOTOR_ACTIVE_PIN, OUTPUT);
   pinMode(MOTOR_1_PIN, OUTPUT);
@@ -592,52 +691,41 @@ void setup() {
   esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
 
   if (cause == ESP_SLEEP_WAKEUP_EXT0) {
-    Serial.println("Wake: BUTTON -> Config mode");
-    configMode = true;
+    Serial.println("Button boot");
+    configMode = buttonBoot;
   } else if (cause == ESP_SLEEP_WAKEUP_TIMER) {
-    Serial.println("Wake: TIMER -> Run task");
+    Serial.println("Scheduled boot");
+    configMode = scheduledBoot;
   } else {
-    Serial.println("First boot or reset");
-    configMode = true; // allow config on first boot
+    Serial.println("First boot");
+    configMode = firstBoot;
   }
 
-  if (configMode) {
-    // Start AP
-    WiFi.begin(ssid, password);
-
-    while (WiFi.status() != WL_CONNECTED && WiFi.localIP().toString() == "0.0.0.0") {
-      delay(2000);
-      Serial.print(WiFi.status());
-      Serial.print(" / ");
-      Serial.println(WiFi.localIP().toString());
-    }
-  
-    if (!MDNS.begin("mamas-pflanze")) {  // your custom name
-      Serial.println("Error setting up MDNS responder!");
-    }
-    Serial.println("mDNS responder started");
+  if (configMode == firstBoot) {
+    connectToWifiDefault();
+    connectMDNS();
 
     // Sync time
     initTime();
 
-    // Web routes
-    server.on("/", handleRoot);
-    server.on("/set", handleSet);
-    server.on("/getHour", handleGetHour);
-    server.on("/getMinute", handleGetMinute);
-    server.on("/getDuration", handleGetDuration);
-    server.on("/water", handleWater);
-    server.on("/health", handleHealth);
-
-    server.begin();
+    startServer();
 
     startTime = millis();
-  } else {
+  } else if(configMode == buttonBoot) {
+    connectToWifiFast();
+    connectMDNS();
+
+    // Sync time
+    initTime();
+
+    startServer();
+
+    startTime = millis();
+  } else if(configMode == scheduledBoot) {
     Serial.println("Timer wake task running...");
 
     water(wakeDuration);
 
-    delay(1000);
     goToSleep();
   }
 }
@@ -651,7 +739,6 @@ void loop() {
       Serial.println("10 minutes passed -> shutting down");
 
       // Timeout reached, shutting down
-      delay(1000);
       goToSleep();
     }
 

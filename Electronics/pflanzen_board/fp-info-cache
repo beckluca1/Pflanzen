@@ -1,4 +1,4 @@
-23661653234087995
+23674098723753510
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -54690,6 +54690,48 @@ DRV8210DSGR
 0
 11
 11
+DRV8210
+NX2016SA-40M-STD-CZS-3_NDK
+
+NX2016SA-40M-STD-CZS-3 
+0
+4
+4
+DRV8210
+NX2016SA-40M-STD-CZS-3_NDK-L
+
+NX2016SA-40M-STD-CZS-3 
+0
+4
+4
+DRV8210
+NX2016SA-40M-STD-CZS-3_NDK-M
+
+NX2016SA-40M-STD-CZS-3 
+0
+4
+4
+DRV8210
+SOIC-8_5P28X5P28_WIN
+
+W25Q64JVSSIQ 
+0
+8
+8
+DRV8210
+SOIC-8_5P28X5P28_WIN-L
+
+W25Q64JVSSIQ 
+0
+8
+8
+DRV8210
+SOIC-8_5P28X5P28_WIN-M
+
+W25Q64JVSSIQ 
+0
+8
+8
 Diode_SMD
 D_0201_0603Metric
 Diode SMD 0201 (0603 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: https://www.vishay.com/docs/20052/crcw0201e3.pdf), generated with kicad-footprint-generator
@@ -56692,6 +56734,13 @@ One digit LED 7 segment SA39-11 SC39-11 SA39-12 SC39-12
 0
 10
 10
+Edit
+USB_C_Receptacle_GCT_USB4110_Edit
+USB 2.0 Type C Receptacle, GCT, 16P, top mounted, horizontal, 5A, https://gct.co/files/drawings/usb4110.pdf
+USB 2.0 C Type-C Receptacle SMD 16P 16C USB4110-GF-A
+0
+16
+16
 Ferrite_THT
 LairdTech_28C0236-0JW-10
 Ferrite, vertical, LairdTech 28C0236-0JW-10, https://assets.lairdtech.com/home/brandworld/files/28C0236-0JW-10.pdf, JW Miller core https://www.bourns.com/products/magnetic-products/j.w.-miller-through-hole-ferrite-beads-emi-filters
