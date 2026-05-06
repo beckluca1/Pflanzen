@@ -1,0 +1,33 @@
+* {touch-action: none;}
+head {height: 0dvh; margin: 0; padding: 0;}
+body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+
+#menu {width: 100vw; height: 100dvh;}
+#down {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 2;  user-select: none; background: rgb(51, 28, 28); opacity: 0.5;}
+#downText{padding: 3vw; font-size: 10vw; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0; display: none;  position: absolute; z-index: 2; background: rgb(102, 52, 41);border-radius: 5dvh; user-select: none;}
+
+.backgroundElement {background: rgb(23, 28, 51);}
+.foregroundElement {background: rgb(41, 52, 102);}
+
+.downBackgroundElement {background: rgb(23, 28, 51);}
+.downForegroundElement {background: rgb(41, 52, 102);}
+
+#topSettings {height: 70dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+#dial {height: 65dvh; margin: 0; padding: 0; border-radius: 10dvh; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+#selector {width: 100vw; height: 70dvh; margin: 0; padding: 0; display: flex;  position: absolute; z-index: 2; align-items: center; justify-content: center; pointer-events: none;}
+#separator {height: 65dvh; width: 5vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; user-select: none;}
+#hours {height: 60dvh; width: 30vw; margin: 0; padding: 0; text-align: center; overflow: hidden;}
+#minutes {height: 60dvh; width: 30vw; margin: 0; padding: 0; text-align: center; overflow: hidden;}
+            
+#bottomSettings {height: 30dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+#duration {height: 30dvh; width: 20vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;}
+#seconds {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; overflow: hidden; }
+#space {height: 30dvh; width: 5vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; }
+#shutdown {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+#water {height: 25dvh; width: 20vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+
+.separatorText{font-size: 4vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0;}
+.upperText{font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
+.lowerText{font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
+#topBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-bottom: 35dvh; background: white;}
+#bottomBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-top: 35dvh; background: white;}
