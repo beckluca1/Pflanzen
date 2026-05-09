@@ -5,6 +5,7 @@
 #include <time.h>
 #include <HTTPClient.h>
 #include <SPIFFS.h>
+#include "mbedtls/md.h"
 
 // -------- CONFIG --------
 #define CONFIG_PIN       D1  // D1 GPIO_2
@@ -43,6 +44,12 @@ int startTime = 0;
 const char* indexURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/index.html";
 const char* styleURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/style.css";
 const char* scriptURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/script.js";
+
+const char* indexKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/indexKey.txt";
+const char* styleKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/styleKey.txt";
+const char* scriptKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/scriptKey.txt";
+
+const char* privateKey = "XXX";
 
 // -------- TIME --------
 bool initTime() {
@@ -160,6 +167,94 @@ void sendFile(String fileName, const char * fileType) {
   file.close();
 }
 
+bool hmacFile(
+    const char *path,
+    const uint8_t *key,
+    size_t keyLen,
+    uint8_t output[32]
+) {
+    File file = SPIFFS.open(path, "r");
+
+    if (!file) {
+        Serial.println("Failed to open file");
+        return false;
+    }
+
+    mbedtls_md_context_t ctx;
+    mbedtls_md_init(&ctx);
+
+    const mbedtls_md_info_t *info =
+        mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+
+    if (!info) {
+        Serial.println("SHA256 not available");
+        file.close();
+        return false;
+    }
+
+    if (mbedtls_md_setup(&ctx, info, 1) != 0) {
+        Serial.println("mbedtls_md_setup failed");
+        file.close();
+        return false;
+    }
+
+    if (mbedtls_md_hmac_starts(&ctx, key, keyLen) != 0) {
+        Serial.println("hmac_starts failed");
+        mbedtls_md_free(&ctx);
+        file.close();
+        return false;
+    }
+
+    const size_t BUFFER_SIZE = 512;
+    uint8_t buffer[BUFFER_SIZE];
+
+    while (file.available()) {
+
+        size_t bytesRead =
+            file.read(buffer, BUFFER_SIZE);
+
+        if (bytesRead > 0) {
+
+            if (mbedtls_md_hmac_update(
+                    &ctx,
+                    buffer,
+                    bytesRead) != 0) {
+
+                Serial.println("hmac_update failed");
+
+                mbedtls_md_free(&ctx);
+                file.close();
+                return false;
+            }
+        }
+    }
+
+    if (mbedtls_md_hmac_finish(&ctx, output) != 0) {
+        Serial.println("hmac_finish failed");
+
+        mbedtls_md_free(&ctx);
+        file.close();
+        return false;
+    }
+
+    mbedtls_md_free(&ctx);
+    file.close();
+
+    return true;
+}
+
+String hmacToString(uint8_t hmac[32]) {
+    char output[65];
+
+    for (int i = 0; i < 32; i++) {
+        sprintf(output + (i * 2), "%02x", hmac[i]);
+    }
+
+    output[64] = '\0';
+
+    return String(output);
+}
+
 void handleRoot() {
   sendFile("/index.html", "text/html");
 }
@@ -231,9 +326,9 @@ void handleHealth() {
 }
 
 void handleUpdate() {
-  downloadFile(indexURL, "/index.html");
-  downloadFile(styleURL, "/style.css");
-  downloadFile(scriptURL, "/script.js");
+  downloadFileSecure(indexURL, "/index.html", indexKeyURL);
+  downloadFileSecure(styleURL, "/style.css", styleKeyURL);
+  downloadFileSecure(scriptURL, "/script.js", scriptKeyURL);
 
   server.send(200, "application/json", "{\"success\":true}");
 }
@@ -341,7 +436,32 @@ bool connectMDNS(const char* hostname) {
     return true;
 }
 
-bool downloadFile(String fileURL, String fileName) {
+bool downloadFileSecure(String fileURL, const char* fileName, String keyURL) {
+
+  downloadFile(fileURL, fileName);
+  downloadFile(keyURL, "/hmac.txt");
+
+  File file = SPIFFS.open("/hmac.txt", FILE_READ);
+  if (!file) {
+    Serial.println("Failed to open file");
+    return false;
+  }
+  String testHmac = file.readString();
+
+  Serial.println(testHmac);
+
+  uint8_t hmac[32];
+  if(!hmacFile(fileName, (const uint8_t *) privateKey, strlen(privateKey), hmac)) return false;
+
+  String hmacString = hmacToString(hmac);
+
+  Serial.println(hmacString);
+
+  return true;
+}
+
+
+bool downloadFile(String fileURL, const char* fileName) {
   HTTPClient http;
   http.begin(fileURL);
 
@@ -357,7 +477,6 @@ bool downloadFile(String fileURL, String fileName) {
     }
 
     uint8_t buffer[128];
-    size_t bytesRead;
     size_t totalBytes = 0;
 
     unsigned long timeoutStart = millis();
@@ -412,9 +531,9 @@ bool downloadFile(String fileURL, String fileName) {
 }
 
 bool updateWebsite() {
-    if(!downloadFile(indexURL, "/index.html")) return false;
-    if(!downloadFile(styleURL, "/style.css")) return false;
-    if(!downloadFile(scriptURL, "/script.js")) return false;
+    if(!downloadFileSecure(indexURL, "/index.html", indexKeyURL)) return false;
+    if(!downloadFileSecure(styleURL, "/style.css", styleKeyURL)) return false;
+    if(!downloadFileSecure(scriptURL, "/script.js", scriptKeyURL)) return false;
 
     return true;
 }
