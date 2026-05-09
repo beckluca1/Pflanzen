@@ -2,3 +2,4 @@
 /Hardware/stl_files/*
 /Hardware/print_files/*
 /Electronics/pflanzen_board/pflanzen_board-backups/*
+/Software/server/secret.h

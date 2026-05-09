@@ -7,16 +7,13 @@
 #include <SPIFFS.h>
 #include "mbedtls/md.h"
 
+#include "secret.h"
+
 // -------- CONFIG --------
 #define CONFIG_PIN       D1  // D1 GPIO_2
 #define MOTOR_ACTIVE_PIN D8  // D8
 #define MOTOR_1_PIN      D9  // D9
 #define MOTOR_2_PIN      D10 // D10
-
-// WiFi AP (config mode)
-const char* ssid = "XXX";
-const char* password = "XXX";
-const char* url = "pflanze";
 
 // NTP
 const char* ntpServer = "pool.ntp.org";
@@ -41,15 +38,13 @@ ConfigMode configMode = noBootMode;
 
 int startTime = 0;
 
-const char* indexURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/index.html";
-const char* styleURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/style.css";
-const char* scriptURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/script.js";
+const char* indexURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/index.html";
+const char* styleURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/style.css";
+const char* scriptURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/script.js";
 
-const char* indexKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/indexKey.txt";
-const char* styleKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/styleKey.txt";
-const char* scriptKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Sofware/server/data/scriptKey.txt";
-
-const char* privateKey = "XXX";
+const char* indexKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/indexKey.txt";
+const char* styleKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/styleKey.txt";
+const char* scriptKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/scriptKey.txt";
 
 // -------- TIME --------
 bool initTime() {
@@ -447,15 +442,30 @@ bool downloadFileSecure(String fileURL, const char* fileName, String keyURL) {
     return false;
   }
   String testHmac = file.readString();
+  file.close();
 
+  Serial.println("HMAC Key:");
   Serial.println(testHmac);
 
   uint8_t hmac[32];
   if(!hmacFile(fileName, (const uint8_t *) privateKey, strlen(privateKey), hmac)) return false;
 
   String hmacString = hmacToString(hmac);
-
+  Serial.println("Downloaded Files HMAC:");
   Serial.println(hmacString);
+
+  if(testHmac != hmacString) {
+    Serial.println("HMAC does not match. Clearing file");
+
+    File clearFile = SPIFFS.open(fileURL, FILE_WRITE);
+
+    if (clearFile) {
+        clearFile.close();
+    }
+
+    return false;
+  }
+
 
   return true;
 }
