@@ -306,40 +306,18 @@ void randombytes(unsigned char *x, unsigned long long xlen)
 }
 
 bool verifyFile(String signature, uint8_t hash[32], String publicKey) {
-
     signature.trim();
     uint8_t signatureBuffer[signature.length() / 2];
     hexToBytes(signature, signatureBuffer);
-
-  for (int i = 0; i < 64; i++)
-  {
-      Serial.printf("%02x", signatureBuffer[i]);
-  }
-  Serial.println();
-
-    Serial.println("Signature Length: ");
-    Serial.println(signature.length() / 2);
 
     publicKey.trim();
     uint8_t publicKeyBuffer[publicKey.length() / 2];
     hexToBytes(publicKey, publicKeyBuffer);
 
-  for (int i = 0; i < 32; i++)
-  {
-      Serial.printf("%02x", publicKeyBuffer[i]);
-  }
-  Serial.println();
-
-    Serial.println("Key Length: ");
-    Serial.println(publicKey.length() / 2);
-
-    uint8_t m_buffer[32];
+    uint8_t m_buffer[96];
     long long unsigned int m_len;
 
-    int verification = crypto_sign_open(m_buffer, &m_len, signatureBuffer, 96, publicKeyBuffer);
-    Serial.println(verification);
-
-    if(verification != 0) return false;
+    if(crypto_sign_open(m_buffer, &m_len, signatureBuffer, 96, publicKeyBuffer) != 0) return false;
 
     return true;
 }
