@@ -776,16 +776,16 @@ static int unpackneg(gf r[4],const u8 p[32])
   return 0;
 }
 
-int crypto_sign_open(u8 *m,u64 *mlen,const u8 *sm,u64 n,const u8 *pk)
+bool crypto_sign_open(u8 *m,u64 *mlen,const u8 *sm,u64 n,const u8 *pk)
 {
   int i;
   u8 t[32],h[64];
   gf p[4],q[4];
 
   *mlen = -1;
-  if (n < 64) return -1;
+  if (n < 64) return false;
 
-  if (unpackneg(q,pk)) return -1;
+  if (unpackneg(q,pk)) return false;
 
   FOR(i,n) m[i] = sm[i];
   FOR(i,32) m[i+32] = pk[i];
@@ -800,15 +800,15 @@ int crypto_sign_open(u8 *m,u64 *mlen,const u8 *sm,u64 n,const u8 *pk)
   n -= 64;
   if (crypto_verify_32(sm, t)) {
     FOR(i,n) m[i] = 0;
-    return -1;
+    return false;
   }
 
   FOR(i,n) m[i] = sm[i + 64];
   *mlen = n;
-  return 0;
+  return true;
 }
 
-int crypto_sign_verify_detached(
+bool crypto_sign_verify_detached(
     const unsigned char *sig,
     const unsigned char *m,
     unsigned long long mlen,

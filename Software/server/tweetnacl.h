@@ -209,14 +209,14 @@ extern int crypto_secretbox_xsalsa20poly1305_tweet_open(unsigned char *,const un
 #define crypto_sign_ed25519_tweet_BYTES 64
 #define crypto_sign_ed25519_tweet_PUBLICKEYBYTES 32
 #define crypto_sign_ed25519_tweet_SECRETKEYBYTES 64
-extern int crypto_sign_verify_detached(
+extern bool crypto_sign_verify_detached(
     const unsigned char *sig,
     const unsigned char *m,
     unsigned long long mlen,
     const unsigned char *pk
 );
 extern int crypto_sign_ed25519_tweet(unsigned char *,unsigned long long *,const unsigned char *,unsigned long long,const unsigned char *);
-extern int crypto_sign_ed25519_tweet_open(unsigned char *,unsigned long long *,const unsigned char *,unsigned long long,const unsigned char *);
+extern bool crypto_sign_ed25519_tweet_open(unsigned char *,unsigned long long *,const unsigned char *,unsigned long long,const unsigned char *);
 extern int crypto_sign_ed25519_tweet_keypair(unsigned char *,unsigned char *);
 #define crypto_sign_ed25519_tweet_VERSION "-"
 #define crypto_sign_ed25519 crypto_sign_ed25519_tweet

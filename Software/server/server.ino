@@ -8,8 +8,6 @@
 #include "mbedtls/md.h"
 #include "tweetnacl.h"
 
-#include "secret.h"
-
 // -------- CONFIG --------
 #define CONFIG_PIN       D1  // D1 GPIO_2
 #define MOTOR_ACTIVE_PIN D8  // D8
@@ -131,6 +129,8 @@ enum ConfigMode {
 ConfigMode configMode = noBootMode;
 
 int startTime = 0;
+
+String publicKey  = "36754df48c6fc69b623b07d087c5dcd7671cadd134b08fb472682d3791bdd8e8";
 
 const char* indexURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/index.html";
 const char* styleURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/style.css";
