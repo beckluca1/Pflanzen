@@ -6,6 +6,7 @@
 #include <HTTPClient.h>
 #include <SPIFFS.h>
 #include "mbedtls/md.h"
+#include "tweetnacl.h"
 
 #include "secret.h"
 
@@ -41,7 +42,7 @@ body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center;
 #textInput {height: 10dvh; width: 60vw; margin: 0; padding: 0; border-top-right-radius: 5dvh; border-bottom-right-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
 #send {height: 10dvh; width: 80vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
 
-.upperText{min-width: 52vw; min-height: 3vh; padding-top: 2vh; padding-bottom: 2vh; white-space: nowrap; font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
+.upperText{min-width: 52vw; min-height: 3vh; padding-top: 2vh; padding-bottom: 2vh; white-space: nowrap; font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;}
 
 #update {padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; border-radius: 4dvh; user-select: none;}
 </style>
@@ -134,10 +135,6 @@ int startTime = 0;
 const char* indexURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/index.html";
 const char* styleURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/style.css";
 const char* scriptURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/script.js";
-
-const char* indexKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/indexKey.txt";
-const char* styleKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/styleKey.txt";
-const char* scriptKeyURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/scriptKey.txt";
 
 // -------- TIME --------
 bool initTime() {
@@ -255,12 +252,7 @@ void sendFile(String fileName, const char * fileType) {
   file.close();
 }
 
-bool hmacFile(
-    const char *path,
-    const uint8_t *key,
-    size_t keyLen,
-    uint8_t output[32]
-) {
+bool hashFile(const char *path, uint8_t hash[32]) {
     File file = SPIFFS.open(path, "r");
 
     if (!file) {
@@ -268,79 +260,34 @@ bool hmacFile(
         return false;
     }
 
-    mbedtls_md_context_t ctx;
-    mbedtls_md_init(&ctx);
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+    mbedtls_sha256_starts(&ctx, 0);
 
-    const mbedtls_md_info_t *info =
-        mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
-
-    if (!info) {
-        Serial.println("SHA256 not available");
-        file.close();
-        return false;
-    }
-
-    if (mbedtls_md_setup(&ctx, info, 1) != 0) {
-        Serial.println("mbedtls_md_setup failed");
-        file.close();
-        return false;
-    }
-
-    if (mbedtls_md_hmac_starts(&ctx, key, keyLen) != 0) {
-        Serial.println("hmac_starts failed");
-        mbedtls_md_free(&ctx);
-        file.close();
-        return false;
-    }
-
-    const size_t BUFFER_SIZE = 512;
-    uint8_t buffer[BUFFER_SIZE];
+    uint8_t buf[512];
 
     while (file.available()) {
-
-        size_t bytesRead =
-            file.read(buffer, BUFFER_SIZE);
-
-        if (bytesRead > 0) {
-
-            if (mbedtls_md_hmac_update(
-                    &ctx,
-                    buffer,
-                    bytesRead) != 0) {
-
-                Serial.println("hmac_update failed");
-
-                mbedtls_md_free(&ctx);
-                file.close();
-                return false;
-            }
-        }
+      int len = file.read(buf, sizeof(buf));
+      mbedtls_sha256_update(&ctx, buf, len);
     }
 
-    if (mbedtls_md_hmac_finish(&ctx, output) != 0) {
-        Serial.println("hmac_finish failed");
-
-        mbedtls_md_free(&ctx);
-        file.close();
-        return false;
-    }
-
-    mbedtls_md_free(&ctx);
-    file.close();
+    mbedtls_sha256_finish(&ctx, hash);
+    mbedtls_sha256_free(&ctx);
 
     return true;
 }
 
-String hmacToString(uint8_t hmac[32]) {
-    char output[65];
+bool verifyFile(String signature, uint8_t hash[32], String publicKey) {
 
-    for (int i = 0; i < 32; i++) {
-        sprintf(output + (i * 2), "%02x", hmac[i]);
-    }
+    uint8_t signatureBuffer[signature.length()];
+    signature.getBytes(signatureBuffer, signature.length() + 1);
 
-    output[64] = '\0';
+    uint8_t publicKeyBuffer[publicKey.length()];
+    publicKey.getBytes(publicKeyBuffer, publicKey.length() + 1);
 
-    return String(output);
+    if(!crypto_sign_verify_detached(signatureBuffer, hash, 32, publicKeyBuffer)) return false;
+
+    return true;
 }
 
 void handleRootBroadcast() {
@@ -461,9 +408,9 @@ void handleHealth() {
 }
 
 void handleUpdate() {
-  downloadFileSecure(indexURL, "/index.html", indexKeyURL);
-  downloadFileSecure(styleURL, "/style.css", styleKeyURL);
-  downloadFileSecure(scriptURL, "/script.js", scriptKeyURL);
+  downloadFileSecure(indexURL, "/index.html");
+  downloadFileSecure(styleURL, "/style.css");
+  downloadFileSecure(scriptURL, "/script.js");
 
   server.send(200, "application/json", "{\"success\":true}");
 }
@@ -604,41 +551,37 @@ bool connectMDNS() {
     return true;
 }
 
-bool downloadFileSecure(String fileURL, const char* fileName, String keyURL) {
+bool downloadFileSecure(String fileURL, const char* fileName) {
 
   downloadFile(fileURL, "/tempFile.txt");
-  downloadFile(keyURL, "/hmac.txt");
+  downloadFile(fileURL + ".sig", "/signature.txt");
 
-  File file = SPIFFS.open("/hmac.txt", FILE_READ);
+  File file = SPIFFS.open("/signature.txt", FILE_READ);
   if (!file) {
     Serial.println("Failed to open file");
     return false;
   }
-  String testHmac = file.readString();
+  String testSignature = file.readString();
   file.close();
 
-  Serial.println("HMAC Key:");
-  Serial.println(testHmac);
+  Serial.println("Signature:");
+  Serial.println(testSignature);
 
-  uint8_t hmac[32];
-  if(!hmacFile("/tempFile.txt", (const uint8_t *) privateKey, strlen(privateKey), hmac)) return false;
+  uint8_t hash[32];
+  if(!hashFile("/tempFile.txt", hash)) return false;
 
-  String hmacString = hmacToString(hmac);
-  Serial.println("Downloaded Files HMAC:");
-  Serial.println(hmacString);
-
-  if(testHmac == hmacString) {
+  if(verifyFile(testSignature, hash, publicKey)) {
       Serial.println("Delete old file and save new downloaded one.");
 
       SPIFFS.remove(fileName);
       SPIFFS.rename("/tempFile.txt", fileName);
   }
   else {
-    Serial.println("HMAC does not match. Keep old file");
+    Serial.println("Signature does not match. Keep old file");
   }
 
   SPIFFS.remove("/tempFile.txt");
-  SPIFFS.remove("/hmac.txt");
+  SPIFFS.remove("/signature.txt");
 
   return true;
 }
@@ -716,9 +659,9 @@ bool downloadFile(String fileURL, const char* fileName) {
 }
 
 bool updateWebsite() {
-    if(!downloadFileSecure(indexURL, "/index.html", indexKeyURL)) return false;
-    if(!downloadFileSecure(styleURL, "/style.css", styleKeyURL)) return false;
-    if(!downloadFileSecure(scriptURL, "/script.js", scriptKeyURL)) return false;
+    if(!downloadFileSecure(indexURL, "/index.html")) return false;
+    if(!downloadFileSecure(styleURL, "/style.css")) return false;
+    if(!downloadFileSecure(scriptURL, "/script.js")) return false;
 
     return true;
 }
@@ -727,6 +670,9 @@ bool startServerBroadcast() {
     // Init web routes
     server.on("/", handleRootBroadcast);
     server.on("/setCredentials", handleSetCredentials);
+    server.on("/getSSID", handleGetSSID);
+    server.on("/getPassword", handleGetPassword);
+    server.on("/getURL", handleGetURL);
 
     // Start Server
     server.begin();
@@ -746,6 +692,7 @@ bool startServer() {
     server.on("/water", handleWater);
     server.on("/health", handleHealth);
     server.on("/update", handleUpdate);
+    server.on("/setCredentials", handleSetCredentials);
     server.on("/getSSID", handleGetSSID);
     server.on("/getPassword", handleGetPassword);
     server.on("/getURL", handleGetURL);
