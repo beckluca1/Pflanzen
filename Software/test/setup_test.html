@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        * {touch-action: none;}
+head {height: 0dvh; margin: 0; padding: 0;}
+body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+
+#settingsMenu {width: 100vw; align-items: center; justify-content: center; overflow: hidden;}
+
+.backgroundElement {background: rgb(23, 28, 51);}
+.fixedForegroundElement {background: rgb(31, 42, 82);}
+.editForegroundElement {background: rgb(51, 62, 122);}
+            
+#settingsField {height: 17dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+
+#description {height: 10dvh; width: 30vw; margin: 0; padding: 0; border-top-left-radius: 5dvh; border-bottom-left-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+#textInput {height: 10dvh; width: 60vw; margin: 0; padding: 0; border-top-right-radius: 5dvh; border-bottom-right-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+#send {height: 10dvh; width: 80vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+
+.upperText{min-width: 52vw; min-height: 3vh; padding-top: 2vh; padding-bottom: 2vh; white-space: nowrap; font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
+
+#update {padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; border-radius: 4dvh; user-select: none;}
+</style>
+  </head>
+  <body class="backgroundElement">
+    <div id="settingsMenu">
+      <div id="settingsField">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">Wifi</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="wifi" class="upperText" contenteditable="true"></div>
+        </div>
+      </div>
+      <div id="settingsField">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">Password</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="password" class="upperText" contenteditable="true">12345678</div>
+        </div>
+      </div>
+      <div id="settingsField">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">URL</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="url" class="upperText" contenteditable="true">meine-pflanze</div>
+        </div>
+      </div>
+      <div id="settingsField">
+        <div id="send" class="editForegroundElement">
+          <div class="upperText">Confirm</div>
+        </div>
+      </div>     
+    </div>
+    <script>
+    async function main() {
+      const wifiDiv = document.getElementById("wifi");
+      const passwordDiv = document.getElementById("password");
+      const urlDiv = document.getElementById("url");
+
+      const sendDiv = document.getElementById("send");
+      sendDiv.addEventListener("click", async () => {
+        try {
+          const response = await fetch("/setCredentials?ssid=" + wifiDiv.textContent + "&password=" + passwordDiv.textContent + "&url=" + urlDiv.textContent);
+
+          if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+          }
+
+          const data = await response.json();
+          console.log(data);
+        } catch (err) {
+          console.error("Fetch failed:", err);
+        }
+      });
+    }
+
+    main();
+    </script>
+  </body>
+</html>

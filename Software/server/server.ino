@@ -15,6 +15,98 @@
 #define MOTOR_1_PIN      D9  // D9
 #define MOTOR_2_PIN      D10 // D10
 
+// AP Wifi
+const char* apSsid = "ESP32_AP";
+const char* apPassword = "12345678";
+
+const char webpage[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        * {touch-action: none;}
+head {height: 0dvh; margin: 0; padding: 0;}
+body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+
+#menu {width: 100vw; align-items: center; justify-content: center; overflow: hidden;}
+
+.backgroundElement {background: rgb(23, 28, 51);}
+.fixedForegroundElement {background: rgb(31, 42, 82);}
+.editForegroundElement {background: rgb(51, 62, 122);}
+            
+#settings {height: 17dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+
+#description {height: 10dvh; width: 30vw; margin: 0; padding: 0; border-top-left-radius: 5dvh; border-bottom-left-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+#textInput {height: 10dvh; width: 60vw; margin: 0; padding: 0; border-top-right-radius: 5dvh; border-bottom-right-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+#send {height: 10dvh; width: 80vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+
+.upperText{min-width: 52vw; min-height: 3vh; padding-top: 2vh; padding-bottom: 2vh; white-space: nowrap; font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
+
+#update {padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; border-radius: 4dvh; user-select: none;}
+</style>
+  </head>
+  <div id="menu">
+    <body class="backgroundElement">
+      <div id="settings">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">Wifi</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="wifi" class="upperText" contenteditable="true"></div>
+        </div>
+      </div>
+      <div id="settings">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">Password</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="password" class="upperText" contenteditable="true">12345678</div>
+        </div>
+      </div>
+      <div id="settings">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">URL</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="url" class="upperText" contenteditable="true">meine-pflanze</div>
+        </div>
+      </div>
+      <div id="settings">
+        <div id="send" class="editForegroundElement">
+          <div class="upperText">Confirm</div>
+        </div>
+      </div>     
+    </div>
+    <script>
+    async function main() {
+      const wifiDiv = document.getElementById("wifi");
+      const passwordDiv = document.getElementById("password");
+      const urlDiv = document.getElementById("url");
+
+      const sendDiv = document.getElementById("send");
+      sendDiv.addEventListener("click", async () => {
+        try {
+          const response = await fetch("/setCredentials?ssid=" + wifiDiv.textContent + "&password=" + passwordDiv.textContent + "&url=" + urlDiv.textContent);
+
+          if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+          }
+
+          const data = await response.json();
+          console.log(data);
+        } catch (err) {
+          console.error("Fetch failed:", err);
+        }
+      });
+    }
+
+    main();
+    </script>
+  </body>
+</html>
+)rawliteral";
+
 // NTP
 const char* ntpServer = "pool.ntp.org";
 
@@ -29,9 +121,10 @@ int wakeDuration = 30;
 
 enum ConfigMode {
   noBootMode = 0,
-  firstBootMode = 1,
-  buttonBootMode = 2,
-  scheduledBootMode = 3,
+  broadcastBootMode = 1,
+  firstBootMode = 2,
+  buttonBootMode = 3,
+  scheduledBootMode = 4,
 };
 
 ConfigMode configMode = noBootMode;
@@ -250,6 +343,53 @@ String hmacToString(uint8_t hmac[32]) {
     return String(output);
 }
 
+void handleRootBroadcast() {
+  server.send(200, "text/html", webpage);
+}
+
+void handleSetCredentials() {
+  String ssid = server.arg("ssid");
+  String password = server.arg("password");
+  String url = server.arg("url");
+
+  prefs.begin("wifi", false);
+  prefs.putString("ssid", ssid);
+  prefs.putString("password", password);
+  prefs.putString("url", url);
+  prefs.end();
+
+  Serial.printf("Saved credentials: %s %s %s\n", ssid, password, url);
+
+  server.send(200, "application/json", "{\"success\":true}");
+
+  delay(1000);
+  ESP.restart();
+}
+
+void handleGetSSID() {
+  prefs.begin("wifi", true);
+  String ssid = prefs.getString("ssid", "");
+  prefs.end();
+
+  server.send(200, "text/plain", ssid);
+}
+
+void handleGetPassword() {
+  prefs.begin("wifi", true);
+  String password = prefs.getString("password", "");
+  prefs.end();
+
+  server.send(200, "text/plain", password);
+}
+
+void handleGetURL() {
+  prefs.begin("wifi", true);
+  String url = prefs.getString("url", "");
+  prefs.end();
+
+  server.send(200, "text/plain", url);
+}
+
 void handleRoot() {
   sendFile("/index.html", "text/html");
 }
@@ -298,7 +438,7 @@ void handleWater() {
   delay(100);
 
   connectToWifiFast();
-  connectMDNS(url);
+  connectMDNS();
   startServer();
 
   startTime = millis();
@@ -380,7 +520,35 @@ bool waitForWifi() {
     return true;
 }
 
+bool connectToWifiBroadcast() {
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(apSsid, apPassword);
+    Serial.println("AP Started");
+    Serial.println(WiFi.softAPIP());
+    //if(!waitForWifi()) return false;
+
+    // Record Wifi credentials for faster reconnect
+    //uint8_t channel = WiFi.channel();
+    //const uint8_t* bssid = WiFi.BSSID();
+  
+    // Store Wifi credentials
+    //prefs.begin("wifi", false);
+    //prefs.putUChar("channel", channel);
+    //prefs.putBytes("bssid", bssid, 6);
+    //prefs.end();
+
+    return true;
+}
+
 bool connectToWifiDefault() {
+
+    // Load wifi credentials
+    Preferences prefs;
+    prefs.begin("wifi", true);
+    String ssid = prefs.getString("ssid", "");
+    String password = prefs.getString("password", "");
+    prefs.end();
+
     WiFi.begin(ssid, password);
 
     if(!waitForWifi()) return false;
@@ -402,11 +570,11 @@ bool connectToWifiFast() {
     // Load wifi credentials
     Preferences prefs;
     prefs.begin("wifi", true);
-
+    String ssid = prefs.getString("ssid", "");
+    String password = prefs.getString("password", "");
     uint8_t channel = prefs.getUChar("channel", 0);
     uint8_t bssid[6];
     prefs.getBytes("bssid", bssid, 6);
-
     prefs.end();
   
     // Connect to Wifi
@@ -418,14 +586,19 @@ bool connectToWifiFast() {
     return true;
 }
 
-bool connectMDNS(const char* hostname) {
+bool connectMDNS() {
+    Preferences prefs;
+    prefs.begin("wifi", true);
+    String url = prefs.getString("url", "meine-pflanze");
+    prefs.end();
+
     Serial.println("Trying to start MDNS");
-    if (!MDNS.begin(hostname)) {
+    if (!MDNS.begin(url)) {
       Serial.println("Failed to start  MDNS");
       return false;
     }
     Serial.println("--------Started MDNS---------");
-    Serial.print("Hostname: "); Serial.println(hostname);
+    Serial.print("Hostname: "); Serial.println(url);
     Serial.println("-----------------------------");    
     
     return true;
@@ -548,6 +721,17 @@ bool updateWebsite() {
     return true;
 }
 
+bool startServerBroadcast() {
+    // Init web routes
+    server.on("/", handleRootBroadcast);
+    server.on("/setCredentials", handleSetCredentials);
+
+    // Start Server
+    server.begin();
+
+    return true;
+}
+
 bool startServer() {
     // Init web routes
     server.on("/", handleRoot);
@@ -567,9 +751,20 @@ bool startServer() {
     return true;
 }
 
+bool broadcastBoot() {
+  if(!connectToWifiBroadcast())   return false;
+  if(!connectMDNS())              return false;
+  //if(!initTime())                 return false;
+  //if(!mountSpiffs())              return false;
+  //if(!updateWebsite())            return false;
+  startServerBroadcast();
+  startTime = millis();
+  return true;
+}
+
 bool firstBoot() {
-  if(!connectToWifiDefault())     return false;
-  if(!connectMDNS(url))           return false;
+  if(!connectToWifiDefault())     {configMode = broadcastBootMode; return false;}
+  if(!connectMDNS())              return false;
   if(!initTime())                 return false;
   if(!mountSpiffs())              return false;
   if(!updateWebsite())            return false;
@@ -580,7 +775,7 @@ bool firstBoot() {
 
 bool buttonBoot() {
   if(!connectToWifiFast())  return false;
-  if(!connectMDNS(url))     return false;
+  if(!connectMDNS())        return false;
   if(!initTime())           return false;
   if(!mountSpiffs())        return false;
   startServer();
@@ -595,7 +790,9 @@ bool scheduledBoot() {
 }
 
 bool bootUp(ConfigMode configMode) {
-  if (configMode == firstBootMode) {
+  if (configMode == broadcastBootMode) {
+    return broadcastBoot();
+  } else if (configMode == firstBootMode) {
     return firstBoot();
   } else if(configMode == buttonBootMode) {
     return buttonBoot();

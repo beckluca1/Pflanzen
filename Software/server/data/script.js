@@ -317,7 +317,7 @@ function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
           settingsUp = !settingsUp;
       });
 
-      const updateDiv = document.getElementById("update");
+      const updateDiv = document.getElementById("updateText");
 
       updateDiv.addEventListener("click", async () => {
         try {
@@ -331,6 +331,30 @@ function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
           console.log(data);
 
           location.reload();
+        } catch (err) {
+          console.error("Fetch failed:", err);
+        }
+      });
+
+      const wifiDiv = document.getElementById("wifi");
+      const passwordDiv = document.getElementById("password");
+      const urlDiv = document.getElementById("url");
+
+      wifiDiv.textContent = await getInput("/getSSID", "");
+      passwordDiv.textContent = await getInput("/getPassword", "12345678");
+      urlDiv.textContent = await getInput("/getURL", "meine-pflanze");
+
+      const sendDiv = document.getElementById("send");
+      sendDiv.addEventListener("click", async () => {
+        try {
+          const response = await fetch("/setCredentials?ssid=" + wifiDiv.textContent + "&password=" + passwordDiv.textContent + "&url=" + urlDiv.textContent);
+
+          if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+          }
+
+          const data = await response.json();
+          console.log(data);
         } catch (err) {
           console.error("Fetch failed:", err);
         }

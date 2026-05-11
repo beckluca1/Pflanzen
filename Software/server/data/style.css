@@ -6,7 +6,9 @@ body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center;
 #down {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 3;  user-select: none; background: rgba(51, 28, 28, 0.5); backdrop-filter: blur(8px);}
 #downText{padding: 3vw; font-size: 10vw; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 1.0; display: none;  position: absolute; z-index: 3; background: rgb(102, 52, 41);border-radius: 5dvh; user-select: none;}
 #settings {width: 100vw; height: 100dvh; position: absolute; display: none; z-index: 2; user-select: none; align-items: center; justify-content: center; background: rgba(21, 32, 62, 0.7); backdrop-filter: blur(12px);}
-#settingsText{padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; top: 1vh; right: 1vw;border-radius: 4dvh; user-select: none;}
+#icons{padding: 1vw; color: white; z-index: 2; opacity: 1.0; position: absolute; top: 1vh; right: 1vw;border-radius: 4dvh; user-select: none;}
+#settingsText{padding: 1vw; margin-bottom: 1dvh; text-align: center; font-size: 5vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; border-radius: 4dvh; user-select: none;}
+#updateText{padding: 1vw; text-align: center; font-size: 5vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; border-radius: 4dvh; user-select: none;}
 
 .backgroundElement {background: rgb(23, 28, 51);}
 .foregroundElement {background: rgb(41, 52, 102);}
@@ -33,5 +35,18 @@ body {height: 100dvh; margin: 0; padding: 0; display: flex; align-items: center;
 .lowerText{font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
 #topBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-bottom: 35dvh; background: white;}
 #bottomBar{width: 70vw; height: 1dvh; position: absolute; margin: 0; margin-top: 35dvh; background: white;}
+
+#settingsMenu {width: 100vw; align-items: center; justify-content: center; overflow: hidden;}
+
+.fixedForegroundElement {background: rgb(31, 42, 82);}
+.editForegroundElement {background: rgb(51, 62, 122);}
+            
+#settingsField {height: 17dvh; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+
+#description {height: 10dvh; width: 25vw; margin: 0; padding: 0; border-top-left-radius: 5dvh; border-bottom-left-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+#textInput {height: 10dvh; width: 55vw; margin: 0; padding: 0; border-top-right-radius: 5dvh; border-bottom-right-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+#send {height: 10dvh; width: 80vw; margin: 0; padding: 0; border-radius: 5dvh; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; user-select: none;}
+
+.upperText{min-width: 47vw; min-height: 3vh; padding-top: 2vh; padding-bottom: 2vh; white-space: nowrap; font-size: 3vh; font-family: Verdana, Geneva, sans-serif; color: white;  opacity: 0.5;}
 
 #update {padding: 1vw; font-size: 3vw; font-family: Verdana, Geneva, sans-serif; color: white; z-index: 2; opacity: 1.0; display: flex;  position: absolute; border-radius: 4dvh; user-select: none;}

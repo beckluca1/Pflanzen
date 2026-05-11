@@ -3,9 +3,9 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="/style.css">
-  </head>
-  <div id="menu">
-    <body class="backgroundElement">
+ </head>
+  <body class="backgroundElement">
+    <div id="menu">
       <div id="topSettings">
         <div id="selector">
           <div id="topBar"></div>
@@ -39,9 +39,42 @@
     </div>
     <div id="downText">Server schl&auml;ft</div>
     <div id="settings">
-        <div id="update" class="foregroundElement">Update</div>
+        <div id="settingsMenu">
+      <div id="settingsField">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">Wifi</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="wifi" class="upperText" contenteditable="true"></div>
+        </div>
+      </div>
+      <div id="settingsField">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">Password</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="password" class="upperText" contenteditable="true">12345678</div>
+        </div>
+      </div>
+      <div id="settingsField">
+        <div id="description" class="fixedForegroundElement">
+          <div class="upperText">URL</div>
+        </div>
+        <div id="textInput" class="editForegroundElement">
+          <div id="url" class="upperText" contenteditable="true">meine-pflanze</div>
+        </div>
+      </div>
+      <div id="settingsField">
+        <div id="send" class="editForegroundElement">
+          <div class="upperText">Confirm</div>
+        </div>
+      </div>     
     </div>
-    <div id="settingsText" class="foregroundElement">&#x26ED;</div>
+    </div>
+    <div id="icons">
+      <div id="settingsText" class="foregroundElement">&#x26ED;</div>
+      <div id="updateText" class="foregroundElement">&#10515;</div>
+    </div>
     <script src="/script.js"></script>
   </body>
 </html>
