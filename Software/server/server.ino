@@ -630,8 +630,8 @@ bool downloadFileSecure(String fileURL, const char* fileName, String keyURL) {
   if(testHmac == hmacString) {
       Serial.println("Delete old file and save new downloaded one.");
 
-      SPIFFS.remove(fileURL);
-      SPIFFS.rename("/tempFile.txt", fileURL);
+      SPIFFS.remove(fileName);
+      SPIFFS.rename("/tempFile.txt", fileName);
   }
   else {
     Serial.println("HMAC does not match. Keep old file");
@@ -698,6 +698,7 @@ bool downloadFile(String fileURL, const char* fileName) {
     File checkFile = SPIFFS.open(fileName, FILE_READ);
 
     Serial.println("------Downloaded file--------");
+    Serial.print("URL: "); Serial.println(fileURL);
     Serial.print("Name: "); Serial.println(checkFile.name());
     Serial.print("Size: "); Serial.println(checkFile.size());
     Serial.println("-----------------------------");    

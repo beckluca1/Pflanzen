@@ -137,6 +137,32 @@ function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
       output.text = numberDiv.textContent;
     }
 
+    async function getInputText(id, defaultValue) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const res = await fetch(id, { signal: controller.signal });
+
+        if (!res.ok) {
+          throw new Error(`Server error: ${res.status}`);
+        }
+
+        const value = await res.text();
+        return value.trim();
+      } catch (err) {
+        if (err.name === "AbortError") {
+          console.error("Request timed out (server may be down)");
+        } else {
+          console.error("Network/server error:", err.message);
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      return defaultValue;
+    }
+
     async function getInput(id, defaultValue) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
@@ -340,9 +366,9 @@ function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
       const passwordDiv = document.getElementById("password");
       const urlDiv = document.getElementById("url");
 
-      wifiDiv.textContent = await getInput("/getSSID", "").text();
-      passwordDiv.textContent = await getInput("/getPassword", "12345678").text();
-      urlDiv.textContent = await getInput("/getURL", "meine-pflanze").text();
+      wifiDiv.textContent = await getInputText("/getSSID", "");
+      passwordDiv.textContent = await getInputText("/getPassword", "12345678");
+      urlDiv.textContent = await getInputText("/getURL", "meine-pflanze");
 
       const sendDiv = document.getElementById("send");
       sendDiv.addEventListener("click", async () => {
