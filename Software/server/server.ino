@@ -744,6 +744,9 @@ bool startServer() {
     server.on("/water", handleWater);
     server.on("/health", handleHealth);
     server.on("/update", handleUpdate);
+    server.on("/getSSID", handleGetSSID);
+    server.on("/getPassword", handleGetPassword);
+    server.on("/getURL", handleGetURL);
 
     // Start Server
     server.begin();

@@ -340,9 +340,9 @@ function shiftNumbers(parentDiv, count, startIndex, endIndex, time) {
       const passwordDiv = document.getElementById("password");
       const urlDiv = document.getElementById("url");
 
-      wifiDiv.textContent = await getInput("/getSSID", "");
-      passwordDiv.textContent = await getInput("/getPassword", "12345678");
-      urlDiv.textContent = await getInput("/getURL", "meine-pflanze");
+      wifiDiv.textContent = await getInput("/getSSID", "").text();
+      passwordDiv.textContent = await getInput("/getPassword", "12345678").text();
+      urlDiv.textContent = await getInput("/getURL", "meine-pflanze").text();
 
       const sendDiv = document.getElementById("send");
       sendDiv.addEventListener("click", async () => {
