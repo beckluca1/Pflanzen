@@ -606,7 +606,7 @@ bool connectMDNS() {
 
 bool downloadFileSecure(String fileURL, const char* fileName, String keyURL) {
 
-  downloadFile(fileURL, fileName);
+  downloadFile(fileURL, "/tempFile.txt");
   downloadFile(keyURL, "/hmac.txt");
 
   File file = SPIFFS.open("/hmac.txt", FILE_READ);
@@ -627,18 +627,18 @@ bool downloadFileSecure(String fileURL, const char* fileName, String keyURL) {
   Serial.println("Downloaded Files HMAC:");
   Serial.println(hmacString);
 
-  if(testHmac != hmacString) {
-    Serial.println("HMAC does not match. Clearing file");
+  if(testHmac == hmacString) {
+      Serial.println("Delete old file and save new downloaded one.");
 
-    File clearFile = SPIFFS.open(fileURL, FILE_WRITE);
-
-    if (clearFile) {
-        clearFile.close();
-    }
-
-    return false;
+      SPIFFS.remove(fileURL);
+      SPIFFS.rename("/tempFile.txt", fileURL);
+  }
+  else {
+    Serial.println("HMAC does not match. Keep old file");
   }
 
+  SPIFFS.remove("/tempFile.txt");
+  SPIFFS.remove("/hmac.txt");
 
   return true;
 }
