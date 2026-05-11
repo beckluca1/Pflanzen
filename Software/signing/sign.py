@@ -42,7 +42,8 @@ def sign_file(file_path, signing_key):
     file_hash = file_sha256(file_path)
     print("Hash:", file_hash.hex())
     signed = signing_key.sign(file_hash)
-    return signed.signature.hex()
+    sm_buffer = signed.signature + signed.message
+    return sm_buffer.hex()
 
 
 # ---------- Write .sig file ----------
@@ -81,9 +82,6 @@ def sign_folder(folder_path, private_key_hex):
 
 # ---------- CLI ----------
 if __name__ == "__main__":
-    data = b"hello world"
-    print(hashlib.sha256(data).hexdigest())
- 
     key_path = sys.argv[1]
     private_key, public_key = load_keys(key_path )
     folder_path = sys.argv[2]    

@@ -130,7 +130,7 @@ ConfigMode configMode = noBootMode;
 
 int startTime = 0;
 
-String publicKey  = "36754df48c6fc69b623b07d087c5dcd7671cadd134b08fb472682d3791bdd8e8";
+String publicKey  = "0e4e2a5067fdb53cbc7f0e99bdd35b5883b223035d4d035efb4efa4124478828";
 
 const char* indexURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/index.html";
 const char* styleURL = "https://raw.githubusercontent.com/beckluca1/Pflanzen/refs/heads/main/Software/server/data/style.css";
@@ -277,15 +277,69 @@ bool hashFile(const char *path, uint8_t hash[32]) {
     return true;
 }
 
+size_t hexToBytes(const String &hex, uint8_t *out) {
+  size_t len = hex.length();
+  size_t byteCount = 0;
+
+  for (size_t i = 0; i + 1 < len; i += 2) {
+    char c1 = hex[i];
+    char c2 = hex[i + 1];
+
+    auto hexVal = [](char c) -> uint8_t {
+      if (c >= '0' && c <= '9') return c - '0';
+      if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+      if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+      return 0; // or handle error
+    };
+
+    out[byteCount++] = (hexVal(c1) << 4) | hexVal(c2);
+  }
+
+  return byteCount;
+}
+
+#include "esp_system.h"
+
+void randombytes(unsigned char *x, unsigned long long xlen)
+{
+    esp_fill_random(x, xlen);
+}
+
 bool verifyFile(String signature, uint8_t hash[32], String publicKey) {
 
-    uint8_t signatureBuffer[signature.length()];
-    signature.getBytes(signatureBuffer, signature.length() + 1);
+    signature.trim();
+    uint8_t signatureBuffer[signature.length() / 2];
+    hexToBytes(signature, signatureBuffer);
 
-    uint8_t publicKeyBuffer[publicKey.length()];
-    publicKey.getBytes(publicKeyBuffer, publicKey.length() + 1);
+  for (int i = 0; i < 64; i++)
+  {
+      Serial.printf("%02x", signatureBuffer[i]);
+  }
+  Serial.println();
 
-    if(!crypto_sign_verify_detached(signatureBuffer, hash, 32, publicKeyBuffer)) return false;
+    Serial.println("Signature Length: ");
+    Serial.println(signature.length() / 2);
+
+    publicKey.trim();
+    uint8_t publicKeyBuffer[publicKey.length() / 2];
+    hexToBytes(publicKey, publicKeyBuffer);
+
+  for (int i = 0; i < 32; i++)
+  {
+      Serial.printf("%02x", publicKeyBuffer[i]);
+  }
+  Serial.println();
+
+    Serial.println("Key Length: ");
+    Serial.println(publicKey.length() / 2);
+
+    uint8_t m_buffer[32];
+    long long unsigned int m_len;
+
+    int verification = crypto_sign_open(m_buffer, &m_len, signatureBuffer, 96, publicKeyBuffer);
+    Serial.println(verification);
+
+    if(verification != 0) return false;
 
     return true;
 }
@@ -564,12 +618,13 @@ bool downloadFileSecure(String fileURL, const char* fileName) {
   String testSignature = file.readString();
   file.close();
 
-  Serial.println("Signature:");
+  Serial.print("Signature: ");
   Serial.println(testSignature);
 
   uint8_t hash[32];
   if(!hashFile("/tempFile.txt", hash)) return false;
 
+  Serial.print("Hash: ");
   for (int i = 0; i < 32; i++)
   {
       Serial.printf("%02x", hash[i]);
