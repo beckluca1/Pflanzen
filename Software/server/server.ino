@@ -570,6 +570,12 @@ bool downloadFileSecure(String fileURL, const char* fileName) {
   uint8_t hash[32];
   if(!hashFile("/tempFile.txt", hash)) return false;
 
+  for (int i = 0; i < 32; i++)
+  {
+      Serial.printf("%02x", hash[i]);
+  }
+  Serial.println();
+
   if(verifyFile(testSignature, hash, publicKey)) {
       Serial.println("Delete old file and save new downloaded one.");
 

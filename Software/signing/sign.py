@@ -1,5 +1,6 @@
 import os
 import sys
+import io
 import json
 import hashlib
 import nacl.signing
@@ -29,16 +30,17 @@ def load_keys(path="keys.txt"):
 def file_sha256(file_path):
     sha = hashlib.sha256()
 
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            sha.update(chunk)
+    with open(file_path, "r", encoding="utf-8") as f:
+        for line in f:
+            sha.update(line.encode("utf-8"))
 
-    return sha.digest()  # raw bytes (important for signing)
+    return sha.digest()
 
 
 # ---------- Sign file ----------
 def sign_file(file_path, signing_key):
     file_hash = file_sha256(file_path)
+    print("Hash:", file_hash.hex())
     signed = signing_key.sign(file_hash)
     return signed.signature.hex()
 
@@ -64,7 +66,6 @@ def sign_folder(folder_path, private_key_hex):
         for file in files:
             file_path = os.path.join(root, file)
 
-            # 🚫 skip .sig files
             if file.endswith(".sig"):
                 continue
 
@@ -80,6 +81,9 @@ def sign_folder(folder_path, private_key_hex):
 
 # ---------- CLI ----------
 if __name__ == "__main__":
+    data = b"hello world"
+    print(hashlib.sha256(data).hexdigest())
+ 
     key_path = sys.argv[1]
     private_key, public_key = load_keys(key_path )
     folder_path = sys.argv[2]    
