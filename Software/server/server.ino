@@ -621,7 +621,7 @@ bool downloadFileSecure(String fileURL, const char* fileName, String keyURL) {
   Serial.println(testHmac);
 
   uint8_t hmac[32];
-  if(!hmacFile(fileName, (const uint8_t *) privateKey, strlen(privateKey), hmac)) return false;
+  if(!hmacFile("/tempFile.txt", (const uint8_t *) privateKey, strlen(privateKey), hmac)) return false;
 
   String hmacString = hmacToString(hmac);
   Serial.println("Downloaded Files HMAC:");
@@ -646,7 +646,8 @@ bool downloadFileSecure(String fileURL, const char* fileName, String keyURL) {
 
 bool downloadFile(String fileURL, const char* fileName) {
   HTTPClient http;
-  http.begin(fileURL);
+
+  http.begin(fileURL + "?nocache=" + String(millis()));
 
   int httpCode = http.GET();
 
